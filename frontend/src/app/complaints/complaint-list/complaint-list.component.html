@@ -1,0 +1,81 @@
+<div class="complaint-grid">
+    <mat-card *ngFor="let complaint of complaints" class="complaint-card"
+        [ngClass]="'status-' + complaint.status + '-card'">
+        <mat-card-header>
+            <mat-card-title>{{complaint.title}}</mat-card-title>
+            <mat-card-subtitle>{{complaint.category}} • {{complaint.createdAt | date:'mediumDate'}}</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+            <p>{{complaint.description}}</p>
+            <div *ngIf="complaint.staff" class="assigned-info">
+                <mat-icon>person</mat-icon>
+                <span>Assigned to {{complaint.staff.name}}</span>
+            </div>
+
+            <!-- Show existing feedback -->
+            <div *ngIf="complaint.feedback" class="feedback-display">
+                <div class="feedback-header">
+                    <mat-icon>rate_review</mat-icon>
+                    <span>Your Feedback</span>
+                    <div class="stars">
+                        <mat-icon *ngFor="let star of [1,2,3,4,5]"
+                            [class.filled]="star <= complaint.feedbackRating">star</mat-icon>
+                    </div>
+                </div>
+                <p class="feedback-text">{{complaint.feedback}}</p>
+            </div>
+        </mat-card-content>
+        <mat-card-actions>
+            <span class="chip" [ngClass]="complaint.status">{{complaint.status}}</span>
+
+            <!-- Feedback button for resolved complaints without feedback -->
+            <button mat-stroked-button color="primary" *ngIf="complaint.status === 'Resolved' && !complaint.feedback"
+                (click)="openFeedbackForm(complaint)">
+                <mat-icon>feedback</mat-icon>
+                Give Feedback
+            </button>
+        </mat-card-actions>
+    </mat-card>
+
+    <div *ngIf="complaints.length === 0" class="no-data">
+        <mat-icon>inbox</mat-icon>
+        <p>No complaints yet.</p>
+    </div>
+</div>
+
+<!-- Feedback Modal -->
+<div class="feedback-overlay" *ngIf="feedbackComplaint" (click)="closeFeedbackForm()">
+    <div class="feedback-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <h3>Provide Feedback</h3>
+            <button mat-icon-button (click)="closeFeedbackForm()">
+                <mat-icon>close</mat-icon>
+            </button>
+        </div>
+        <div class="modal-content">
+            <p class="complaint-title">{{feedbackComplaint.title}}</p>
+
+            <div class="rating-section">
+                <label>Rate the service (1-5 stars)</label>
+                <div class="star-rating">
+                    <mat-icon *ngFor="let star of [1,2,3,4,5]" [class.filled]="star <= feedbackRating"
+                        (click)="feedbackRating = star">
+                        star
+                    </mat-icon>
+                </div>
+            </div>
+
+            <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Your Feedback</mat-label>
+                <textarea matInput [(ngModel)]="feedbackText" rows="4"
+                    placeholder="Share your experience with the resolution..."></textarea>
+            </mat-form-field>
+        </div>
+        <div class="modal-actions">
+            <button mat-button (click)="closeFeedbackForm()">Cancel</button>
+            <button mat-raised-button color="primary" (click)="submitFeedback()" [disabled]="!feedbackText.trim()">
+                Submit Feedback
+            </button>
+        </div>
+    </div>
+</div>

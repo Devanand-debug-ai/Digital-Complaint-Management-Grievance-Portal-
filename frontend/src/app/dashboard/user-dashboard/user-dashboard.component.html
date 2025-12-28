@@ -1,0 +1,152 @@
+<div class="dashboard-container">
+    <mat-toolbar color="primary" class="dashboard-toolbar">
+        <mat-icon class="toolbar-icon">dashboard</mat-icon>
+        <span>Grievance Dashboard</span>
+        <span class="spacer"></span>
+        <button mat-icon-button (click)="logout()" matTooltip="Logout">
+            <mat-icon>logout</mat-icon>
+        </button>
+    </mat-toolbar>
+
+    <div class="content">
+        <!-- Analytics Cards -->
+        <div class="analytics-row">
+            <div class="stat-card orange">
+                <div class="icon-circle">
+                    <mat-icon>assignment</mat-icon>
+                </div>
+                <div class="stat-value">{{totalGrievances}}</div>
+                <div class="stat-label">Total Grievances Registered</div>
+            </div>
+            <div class="stat-card green">
+                <div class="icon-circle">
+                    <mat-icon>description</mat-icon>
+                </div>
+                <div class="stat-value">{{pendingGrievances}}</div>
+                <div class="stat-label">Number of Grievances Pending</div>
+            </div>
+            <div class="stat-card red">
+                <div class="icon-circle">
+                    <mat-icon>check_circle</mat-icon>
+                </div>
+                <div class="stat-value">{{closedGrievances}}</div>
+                <div class="stat-label">Number of Grievances Closed</div>
+            </div>
+        </div>
+
+        <!-- List of Grievances -->
+        <div class="grievance-list-card">
+            <div class="card-header">
+                <h2>List of Grievances</h2>
+            </div>
+
+            <div class="table-controls">
+                <div class="entries-control">
+                    <select [(ngModel)]="pageSize" (change)="onPageSizeChange(pageSize)">
+                        <option [ngValue]="10">10</option>
+                        <option [ngValue]="25">25</option>
+                        <option [ngValue]="50">50</option>
+                        <option [ngValue]="100">100</option>
+                    </select>
+                    <span>entries</span>
+                </div>
+                <div class="search-control">
+                    <label>Search:</label>
+                    <input type="text" [(ngModel)]="searchQuery" (input)="onSearchChange()">
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="grievance-table">
+                    <thead>
+                        <tr>
+                            <th>Sn.</th>
+                            <th>Registration Number</th>
+                            <th>Received Date</th>
+                            <th>Grievance description</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let complaint of paginatedComplaints; let i = index">
+                            <td>{{ (currentPage - 1) * pageSize + i + 1 }}</td>
+                            <td>{{complaint.id}}</td>
+                            <td>{{complaint.createdAt | date:'mediumDate'}}</td>
+                            <td>{{complaint.description}}</td>
+                            <td>
+                                <span class="status-badge" [ngClass]="complaint.status.toLowerCase()">
+                                    {{complaint.status}}
+                                </span>
+                            </td>
+                            <td>
+                                <!-- Feedback Action -->
+                                <button mat-stroked-button color="primary" class="feedback-btn"
+                                    *ngIf="complaint.status === 'Resolved' && (!complaint.feedback && !complaint.feedbackRating)"
+                                    (click)="openFeedbackDialog(complaint)">
+                                    <mat-icon>star_border</mat-icon> Rate Service
+                                </button>
+
+                                <!-- Feedback Display -->
+                                <div class="feedback-stars" *ngIf="complaint.feedback || complaint.feedbackRating"
+                                    matTooltip="{{complaint.feedback}}">
+                                    <mat-icon *ngFor="let star of [1,2,3,4,5]"
+                                        [class.filled]="star <= complaint.feedbackRating">star</mat-icon>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr *ngIf="paginatedComplaints.length === 0">
+                            <td colspan="6" class="no-data">No data available in table</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination-footer">
+                <div class="showing-text">
+                    <span *ngIf="filteredComplaints.length > 0">
+                        Showing {{ (currentPage - 1) * pageSize + 1 }} to
+                        {{ Math.min(currentPage * pageSize, filteredComplaints.length) }} of
+                        {{ filteredComplaints.length }} entries
+                    </span>
+                    <span *ngIf="filteredComplaints.length === 0">No entries found</span>
+                </div>
+                <div class="pagination-buttons">
+                    <button [disabled]="currentPage === 1" (click)="currentPage = 1; updatePagination()">First</button>
+                    <button [disabled]="currentPage === 1" (click)="prevPage()">Prev</button>
+                    <button [disabled]="currentPage === 1" class="page-number active">{{currentPage}}</button>
+                    <button [disabled]="currentPage === totalPages" (click)="nextPage()">Next</button>
+                    <button [disabled]="currentPage === totalPages"
+                        (click)="currentPage = totalPages; updatePagination()">Last</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button mat-fab color="accent" class="fab-add" routerLink="/complaint/new" matTooltip="New Grievance">
+        <mat-icon>add</mat-icon>
+    </button>
+</div>
+
+<!-- Feedback Dialog Template -->
+<ng-template #feedbackDialog>
+    <h2 mat-dialog-title>Rate Service</h2>
+    <mat-dialog-content class="feedback-content">
+        <p>How was your experience with this resolution?</p>
+
+        <div class="star-rating margin-bottom">
+            <mat-icon *ngFor="let star of [1,2,3,4,5]" (click)="selectedRating = star"
+                [class.selected]="star <= selectedRating">star</mat-icon>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Additional Comments</mat-label>
+            <textarea matInput [(ngModel)]="feedbackComment" rows="3" placeholder="Thank you..."></textarea>
+        </mat-form-field>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+        <button mat-button mat-dialog-close>Cancel</button>
+        <button mat-raised-button color="primary" [mat-dialog-close]="true" [disabled]="selectedRating === 0">Submit
+            Feedback</button>
+    </mat-dialog-actions>
+</ng-template>

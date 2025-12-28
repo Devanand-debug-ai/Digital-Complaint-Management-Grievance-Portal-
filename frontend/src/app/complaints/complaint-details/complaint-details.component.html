@@ -1,0 +1,48 @@
+<div class="details-container">
+    <mat-card class="details-card">
+        <mat-card-header>
+            <mat-card-title>New Complaint</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <form [formGroup]="complaintForm" (ngSubmit)="onSubmit()">
+                <p>
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Title</mat-label>
+                        <input matInput formControlName="title" placeholder="e.g. Leaking Tap">
+                        <mat-error *ngIf="complaintForm.get('title')?.hasError('required')">Title is
+                            required</mat-error>
+                    </mat-form-field>
+                </p>
+                <p>
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Category</mat-label>
+                        <mat-select formControlName="category">
+                            <mat-option *ngFor="let cat of categories" [value]="cat">{{cat}}</mat-option>
+                        </mat-select>
+                        <mat-error *ngIf="complaintForm.get('category')?.hasError('required')">Category is
+                            required</mat-error>
+                    </mat-form-field>
+                </p>
+                <p>
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Description</mat-label>
+                        <textarea matInput formControlName="description" rows="4"></textarea>
+                        <mat-error *ngIf="complaintForm.get('description')?.hasError('required')">Description is
+                            required</mat-error>
+                    </mat-form-field>
+                </p>
+                <p>
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Attachment URL (Optional)</mat-label>
+                        <input matInput formControlName="attachments" placeholder="http://...">
+                    </mat-form-field>
+                </p>
+                <div class="button-row">
+                    <button mat-raised-button color="primary" type="submit"
+                        [disabled]="!complaintForm.valid">Submit</button>
+                    <button mat-button type="button" routerLink="/dashboard/user">Cancel</button>
+                </div>
+            </form>
+        </mat-card-content>
+    </mat-card>
+</div>

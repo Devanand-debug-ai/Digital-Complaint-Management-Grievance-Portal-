@@ -1,0 +1,324 @@
+<div class="admin-container">
+    <mat-toolbar color="primary" class="admin-toolbar">
+        <mat-icon class="toolbar-icon">admin_panel_settings</mat-icon>
+        <span>Admin Dashboard</span>
+        <span class="spacer"></span>
+        <button mat-icon-button (click)="logout()" matTooltip="Logout">
+            <mat-icon>logout</mat-icon>
+        </button>
+    </mat-toolbar>
+
+    <!-- Analytics Section -->
+    <div class="analytics-section" *ngIf="analytics">
+        <div class="analytics-grid">
+            <div class="analytics-card total">
+                <mat-icon>assignment</mat-icon>
+                <div class="analytics-info">
+                    <span class="count">{{analytics.complaints.total}}</span>
+                    <span class="label">Total Complaints</span>
+                </div>
+            </div>
+            <div class="analytics-card open">
+                <mat-icon>error_outline</mat-icon>
+                <div class="analytics-info">
+                    <span class="count">{{analytics.complaints.open}}</span>
+                    <span class="label">Open</span>
+                </div>
+            </div>
+            <div class="analytics-card assigned">
+                <mat-icon>person_add</mat-icon>
+                <div class="analytics-info">
+                    <span class="count">{{analytics.complaints.assigned}}</span>
+                    <span class="label">Assigned</span>
+                </div>
+            </div>
+            <div class="analytics-card progress">
+                <mat-icon>pending</mat-icon>
+                <div class="analytics-info">
+                    <span class="count">{{analytics.complaints.inProgress}}</span>
+                    <span class="label">In Progress</span>
+                </div>
+            </div>
+            <div class="analytics-card resolved">
+                <mat-icon>check_circle</mat-icon>
+                <div class="analytics-info">
+                    <span class="count">{{analytics.complaints.resolved}}</span>
+                    <span class="label">Resolved</span>
+                </div>
+            </div>
+            <div class="analytics-card users">
+                <mat-icon>people</mat-icon>
+                <div class="analytics-info">
+                    <span class="count">{{analytics.users.total}}</span>
+                    <span class="label">Total Users</span>
+                </div>
+            </div>
+            <!-- Feedback Analytics -->
+            <div class="analytics-card feedback">
+                <mat-icon>rate_review</mat-icon>
+                <div class="analytics-info">
+                    <span class="count">{{analytics.feedback?.total || 0}}</span>
+                    <span class="label">Feedbacks</span>
+                </div>
+            </div>
+            <div class="analytics-card rating">
+                <mat-icon>star</mat-icon>
+                <div class="analytics-info">
+                    <span class="count">{{(analytics.feedback?.averageRating || 0) | number:'1.1-1'}}</span>
+                    <span class="label">Avg Rating</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs Section -->
+    <div class="content">
+        <mat-tab-group animationDuration="200ms">
+            <!-- Complaints Tab -->
+            <mat-tab>
+                <ng-template mat-tab-label>
+                    <mat-icon class="tab-icon">assignment</mat-icon>
+                    All Complaints
+                </ng-template>
+                <div class="tab-content">
+                    <div class="complaint-grid">
+                        <mat-card *ngFor="let complaint of complaints" class="complaint-card"
+                            [ngClass]="'status-' + complaint.status + '-card'">
+                            <mat-card-header>
+                                <mat-card-title>{{complaint.title}}</mat-card-title>
+                                <mat-card-subtitle>
+                                    {{complaint.category}} • {{complaint.createdAt | date:'mediumDate'}}
+                                    <span *ngIf="complaint.user"> • By: {{complaint.user.name}}</span>
+                                </mat-card-subtitle>
+                            </mat-card-header>
+                            <mat-card-content>
+                                <p>{{complaint.description}}</p>
+                                <div class="assigned-info" *ngIf="complaint.staff">
+                                    <mat-icon>person</mat-icon> Assigned to: {{complaint.staff.name}}
+                                </div>
+
+                                <!-- Resolution Notes Display -->
+                                <div class="resolution-display"
+                                    *ngIf="complaint.status === 'Resolved' && complaint.resolutionNotes">
+                                    <div class="resolution-header">
+                                        <mat-icon>task_alt</mat-icon>
+                                        <span>Resolution Notes</span>
+                                    </div>
+                                    <p class="resolution-text">{{complaint.resolutionNotes}}</p>
+                                </div>
+
+                                <!-- Feedback Display -->
+                                <div class="feedback-display" *ngIf="complaint.feedback || complaint.feedbackRating">
+                                    <div class="feedback-header">
+                                        <mat-icon>rate_review</mat-icon>
+                                        <span>User Feedback</span>
+                                        <div class="stars">
+                                            <mat-icon *ngFor="let star of [1,2,3,4,5]"
+                                                [class.filled]="star <= complaint.feedbackRating">star</mat-icon>
+                                        </div>
+                                    </div>
+                                    <p class="feedback-text" *ngIf="complaint.feedback">"{{complaint.feedback}}"</p>
+                                    <p class="feedback-date" *ngIf="complaint.feedbackDate">
+                                        Submitted: {{complaint.feedbackDate | date:'medium'}}
+                                    </p>
+                                </div>
+                            </mat-card-content>
+                            <mat-card-actions class="actions-row">
+                                <mat-form-field appearance="outline" class="action-select">
+                                    <mat-label>Assign Staff</mat-label>
+                                    <mat-select [value]="complaint.staffId"
+                                        (selectionChange)="assignStaff(complaint, $event.value)">
+                                        <mat-option *ngFor="let staff of getAvailableStaff(complaint)"
+                                            [value]="staff.id">
+                                            {{staff.name}}
+                                        </mat-option>
+                                        <mat-option *ngIf="getAvailableStaff(complaint).length === 0" disabled>
+                                            No available staff for {{complaint.category}}
+                                        </mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+                                <mat-form-field appearance="outline" class="action-select">
+                                    <mat-label>Status</mat-label>
+                                    <mat-select [value]="complaint.status"
+                                        (selectionChange)="updateStatus(complaint, $event.value)">
+                                        <mat-option *ngFor="let status of statuses"
+                                            [value]="status">{{status}}</mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+                            </mat-card-actions>
+                        </mat-card>
+                        <div *ngIf="complaints.length === 0" class="no-data">
+                            <mat-icon>inbox</mat-icon>
+                            <p>No complaints found.</p>
+                        </div>
+                    </div>
+                </div>
+            </mat-tab>
+
+            <!-- Feedback Tab -->
+            <mat-tab>
+                <ng-template mat-tab-label>
+                    <mat-icon class="tab-icon">rate_review</mat-icon>
+                    Staff Performance
+                </ng-template>
+                <div class="tab-content">
+                    <div class="complaint-grid">
+                        <mat-card *ngFor="let complaint of getComplaintsWithFeedback()" class="feedback-card">
+                            <mat-card-header>
+                                <mat-card-title>{{complaint.title}}</mat-card-title>
+                                <mat-card-subtitle>
+                                    Resolved by: {{complaint.staff?.name || 'Unassigned'}}
+                                </mat-card-subtitle>
+                            </mat-card-header>
+                            <mat-card-content>
+                                <div class="rating-display">
+                                    <div class="stars-large">
+                                        <mat-icon *ngFor="let star of [1,2,3,4,5]"
+                                            [class.filled]="star <= complaint.feedbackRating">star</mat-icon>
+                                    </div>
+                                    <span class="rating-value">{{complaint.feedbackRating}}/5</span>
+                                </div>
+                                <div class="feedback-quote" *ngIf="complaint.feedback">
+                                    <mat-icon>format_quote</mat-icon>
+                                    <p>{{complaint.feedback}}</p>
+                                </div>
+                                <div class="feedback-meta">
+                                    <span><mat-icon>person</mat-icon> {{complaint.user?.name || 'User'}}</span>
+                                    <span><mat-icon>event</mat-icon> {{complaint.feedbackDate |
+                                        date:'mediumDate'}}</span>
+                                </div>
+                            </mat-card-content>
+                        </mat-card>
+                        <div *ngIf="getComplaintsWithFeedback().length === 0" class="no-data">
+                            <mat-icon>rate_review</mat-icon>
+                            <p>No feedback received yet.</p>
+                        </div>
+                    </div>
+                </div>
+            </mat-tab>
+
+            <!-- Users Tab -->
+            <mat-tab>
+                <ng-template mat-tab-label>
+                    <mat-icon class="tab-icon">people</mat-icon>
+                    Manage Users
+                </ng-template>
+                <div class="tab-content">
+                    <div class="users-table-container">
+                        <table mat-table [dataSource]="users" class="users-table">
+                            <ng-container matColumnDef="name">
+                                <th mat-header-cell *matHeaderCellDef>Name</th>
+                                <td mat-cell *matCellDef="let user">{{user.name}}</td>
+                            </ng-container>
+                            <ng-container matColumnDef="email">
+                                <th mat-header-cell *matHeaderCellDef>Email</th>
+                                <td mat-cell *matCellDef="let user">{{user.email}}</td>
+                            </ng-container>
+                            <!-- Role Column Removed -->
+                            <ng-container matColumnDef="createdAt">
+                                <th mat-header-cell *matHeaderCellDef>Joined</th>
+                                <td mat-cell *matCellDef="let user">{{user.createdAt | date:'mediumDate'}}</td>
+                            </ng-container>
+                            <ng-container matColumnDef="actions">
+                                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                                <td mat-cell *matCellDef="let user">
+                                    <button mat-icon-button color="warn" (click)="deleteUser(user)"
+                                        matTooltip="Delete User">
+                                        <mat-icon>delete</mat-icon>
+                                    </button>
+                                </td>
+                            </ng-container>
+                            <tr mat-header-row *matHeaderRowDef="['name', 'email', 'createdAt', 'actions']"></tr>
+                            <tr mat-row *matRowDef="let row; columns: ['name', 'email', 'createdAt', 'actions'];"></tr>
+                        </table>
+                        <div *ngIf="users.length === 0" class="no-data">
+                            <mat-icon>people</mat-icon>
+                            <p>No users found (except you/staff).</p>
+                        </div>
+                    </div>
+                </div>
+            </mat-tab>
+
+            <!-- Staff Tab (New) -->
+            <mat-tab>
+                <ng-template mat-tab-label>
+                    <mat-icon class="tab-icon">badge</mat-icon>
+                    Manage Staff
+                </ng-template>
+                <div class="tab-content">
+                    <div class="actions-header">
+                        <button mat-raised-button color="primary" (click)="toggleStaffForm()">
+                            <mat-icon>add</mat-icon> {{showStaffForm ? 'Cancel' : 'Add New Staff'}}
+                        </button>
+                    </div>
+
+                    <!-- Add Staff Form -->
+                    <div class="staff-form-card" *ngIf="showStaffForm">
+                        <h3>Add New Staff Member</h3>
+                        <div class="form-grid">
+                            <mat-form-field appearance="outline">
+                                <mat-label>Name</mat-label>
+                                <input matInput [(ngModel)]="newStaff.name" required>
+                            </mat-form-field>
+                            <mat-form-field appearance="outline">
+                                <mat-label>Email</mat-label>
+                                <input matInput [(ngModel)]="newStaff.email" type="email" required>
+                            </mat-form-field>
+                            <mat-form-field appearance="outline">
+                                <mat-label>Password</mat-label>
+                                <input matInput [(ngModel)]="newStaff.password" type="password" required>
+                            </mat-form-field>
+                            <mat-form-field appearance="outline">
+                                <mat-label>Department</mat-label>
+                                <mat-select [(ngModel)]="newStaff.department">
+                                    <mat-option value="Plumber">Plumber</mat-option>
+                                    <mat-option value="Electrician">Electrician</mat-option>
+                                    <mat-option value="Carpenter">Carpenter</mat-option>
+                                    <mat-option value="Painter">Painter</mat-option>
+                                    <mat-option value="Internet Technician">Internet Technician</mat-option>
+
+                                </mat-select>
+                            </mat-form-field>
+                        </div>
+                        <div class="form-actions">
+                            <button mat-button (click)="toggleStaffForm()">Cancel</button>
+                            <button mat-raised-button color="primary" (click)="createStaff()">Create Staff</button>
+                        </div>
+                    </div>
+
+                    <div class="users-table-container">
+                        <table mat-table [dataSource]="staffList" class="users-table">
+                            <ng-container matColumnDef="name">
+                                <th mat-header-cell *matHeaderCellDef>Name</th>
+                                <td mat-cell *matCellDef="let staff">{{staff.name}}</td>
+                            </ng-container>
+                            <ng-container matColumnDef="email">
+                                <th mat-header-cell *matHeaderCellDef>Email</th>
+                                <td mat-cell *matCellDef="let staff">{{staff.email}}</td>
+                            </ng-container>
+                            <ng-container matColumnDef="department">
+                                <th mat-header-cell *matHeaderCellDef>Department</th>
+                                <td mat-cell *matCellDef="let staff">{{staff.department || 'General'}}</td>
+                            </ng-container>
+                            <ng-container matColumnDef="actions">
+                                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                                <td mat-cell *matCellDef="let staff">
+                                    <button mat-icon-button color="warn" (click)="deleteStaff(staff)"
+                                        matTooltip="Delete Staff">
+                                        <mat-icon>delete</mat-icon>
+                                    </button>
+                                </td>
+                            </ng-container>
+                            <tr mat-header-row *matHeaderRowDef="['name', 'email', 'department', 'actions']"></tr>
+                            <tr mat-row *matRowDef="let row; columns: ['name', 'email', 'department', 'actions'];"></tr>
+                        </table>
+                        <div *ngIf="staffList.length === 0" class="no-data">
+                            <mat-icon>badge</mat-icon>
+                            <p>No staff members found.</p>
+                        </div>
+                    </div>
+                </div>
+            </mat-tab>
+        </mat-tab-group>
+    </div>
+</div>
