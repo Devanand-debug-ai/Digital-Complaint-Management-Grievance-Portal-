@@ -35,7 +35,8 @@ export class RegisterComponent {
           this.router.navigate(['/login']);
         },
         error: (err) => {
-          this.snackBar.open('Registration Failed: ' + (err.error.message || 'Server Error'), 'Close', { duration: 3000 });
+          const errorMessage = err?.error?.message || err?.statusText || 'Registration Failed';
+          this.snackBar.open('Registration Failed: ' + errorMessage, 'Close', { duration: 3000 });
         }
       });
     }

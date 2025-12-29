@@ -43,7 +43,8 @@ export class LoginComponent {
           }
         },
         error: (err) => {
-          this.snackBar.open('Login Failed: ' + (err.error.message || 'Server Error'), 'Close', { duration: 3000 });
+          const errorMessage = err?.error?.message || err?.statusText || 'Login Failed';
+          this.snackBar.open('Login Failed: ' + errorMessage, 'Close', { duration: 3000 });
         }
       });
     }
