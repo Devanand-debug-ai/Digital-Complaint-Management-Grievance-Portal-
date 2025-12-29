@@ -3,11 +3,13 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
 
+import { environment } from '../../../environments/environment';
+
 @Injectable({
   providedIn: 'root'
 })
 export class ComplaintService {
-  private apiUrl = 'http://localhost:3000/api/complaints';
+  private apiUrl = `${environment.apiUrl}/complaints`;
 
   constructor(private http: HttpClient, private authService: AuthService) { }
 
