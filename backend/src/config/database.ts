@@ -9,6 +9,12 @@ export const sequelize = dbUrl
     ? new Sequelize(dbUrl, {
         dialect: 'mysql',
         logging: false,
+        dialectOptions: {
+            ssl: {
+                require: true,
+                rejectUnauthorized: false
+            }
+        }
     })
     : new Sequelize(
         process.env.DB_NAME as string,
@@ -23,6 +29,9 @@ export const sequelize = dbUrl
 
 export const connectDB = async () => {
     try {
+        if (dbUrl) {
+            console.log('Attempting to connect to database URL:', dbUrl.replace(/:[^:@]+@/, ':****@'));
+        }
         await sequelize.authenticate();
         console.log('Database connected successfully.');
     } catch (error) {
