@@ -5,6 +5,14 @@ dotenv.config();
 
 const dbUrl = process.env.DATABASE_URL;
 
+console.log('Loaded Database Config:');
+console.log('DATABASE_URL present:', !!dbUrl);
+if (!dbUrl) {
+    console.log('DB_HOST:', process.env.DB_HOST);
+    console.log('DB_USER:', process.env.DB_USER);
+    console.log('DB_NAME:', process.env.DB_NAME);
+}
+
 export const sequelize = dbUrl
     ? new Sequelize(dbUrl, {
         dialect: 'mysql',
