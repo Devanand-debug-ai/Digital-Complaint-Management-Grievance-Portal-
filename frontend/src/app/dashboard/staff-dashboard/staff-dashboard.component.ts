@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
 import { ComplaintService } from '../../core/services/complaint.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Router } from '@angular/router';
@@ -8,7 +8,8 @@ import { MatDialog } from '@angular/material/dialog';
 @Component({
   selector: 'app-staff-dashboard',
   templateUrl: './staff-dashboard.component.html',
-  styleUrls: ['./staff-dashboard.component.scss']
+  styleUrls: ['./staff-dashboard.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 export class StaffDashboardComponent implements OnInit {
   complaints: any[] = [];
@@ -114,6 +115,22 @@ export class StaffDashboardComponent implements OnInit {
         this.snackBar.open('Assignment Failed', 'Close', { duration: 2000 });
       }
     });
+  }
+
+  refresh() {
+    this.loadComplaints();
+    this.snackBar.open('Refreshed', '', { duration: 1000 });
+  }
+
+
+
+  editComplaint(complaint: any) {
+    // Logic to edit - e.g. open resolution dialog if resolved, or focus status
+    if (complaint.status === 'Resolved') {
+      this.openResolutionDialog(complaint);
+    } else {
+      this.snackBar.open('Use the dropdown to change status', 'Close', { duration: 2000 });
+    }
   }
 
   logout() {

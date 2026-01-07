@@ -1,5 +1,5 @@
 <div class="dashboard-container">
-    <mat-toolbar color="accent" class="dashboard-toolbar">
+    <mat-toolbar class="dashboard-toolbar">
         <span>{{ isAdmin ? 'Admin Dashboard' : 'Staff Dashboard' }}</span>
         <span class="spacer"></span>
         <button mat-icon-button (click)="logout()" matTooltip="Logout">
@@ -11,36 +11,63 @@
         <div class="complaint-grid">
             <mat-card *ngFor="let complaint of complaints" class="complaint-card"
                 [ngClass]="'status-' + complaint.status + '-card'">
-                <mat-card-header>
-                    <mat-card-title>{{complaint.title}}</mat-card-title>
-                    <mat-card-subtitle>{{complaint.category}} • {{complaint.created_at |
-                        date:'mediumDate'}}</mat-card-subtitle>
-                </mat-card-header>
-                <mat-card-content>
-                    <p>{{complaint.description}}</p>
-                    <div class="status-text">
-                        Current Status: <strong>{{complaint.status}}</strong>
-                    </div>
 
-                    <div *ngIf="complaint.staff" class="assigned-info">
-                        <strong>Assigned to:</strong> {{complaint.staff.name}}
-                    </div>
-
-                    <!-- Resolution Notes Display -->
-                    <div class="resolution-display"
-                        *ngIf="complaint.status === 'Resolved' && complaint.resolutionNotes">
-                        <div class="resolution-header">
-                            <mat-icon>task_alt</mat-icon>
-                            <span>Resolution Notes</span>
+                <div class="card-inner">
+                    <!-- Header: Title and Top Badge -->
+                    <div class="card-header-row">
+                        <h3 class="card-title">{{complaint.title}}</h3>
+                        <div class="status-badge" [ngClass]="'status-' + complaint.status">
+                            {{complaint.status}}
                         </div>
-                        <p class="resolution-text">{{complaint.resolutionNotes}}</p>
                     </div>
 
-                    <!-- Feedback Display -->
-                    <div class="feedback-display" *ngIf="complaint.feedback || complaint.feedbackRating">
-                        <div class="feedback-header">
-                            <mat-icon>rate_review</mat-icon>
-                            <span>User Feedback</span>
+                    <!-- Subtitle: Category & Meta -->
+                    <div class="card-subtitle-row">
+                        <span class="category">{{complaint.category}} •</span>
+                        <span class="meta-info">
+                            Ticket #{{complaint.id}} • {{complaint.created_at | date:'mediumDate'}}
+                        </span>
+                    </div>
+
+                    <!-- Middle Status Pill (Visible if Resolved) -->
+                    <div class="middle-status-pill status-Resolved" *ngIf="complaint.status === 'Resolved'">
+                        <mat-icon>check_circle</mat-icon>
+                        <span>RESOLVED</span>
+                    </div>
+
+                    <!-- Description -->
+                    <p style="color: #475569; font-size: 14px; margin: 0 0 12px; line-height: 1.5;">
+                        {{complaint.description}}
+                    </p>
+
+                    <!-- Assigned Staff Info -->
+                    <div *ngIf="complaint.staff" class="assigned-info"
+                        style="font-size: 13px; color: #4f46e5; font-weight: 500;">
+                        Attached Staff: {{complaint.staff.name}}
+                    </div>
+
+                    <!-- Resolution Notes Block -->
+                    <div class="resolution-block" *ngIf="complaint.status === 'Resolved' && complaint.resolutionNotes">
+                        <div class="block-header">
+                            <mat-icon>verified</mat-icon>
+                            <span>RESOLUTION NOTES</span>
+                        </div>
+                        <div class="resolution-content">
+                            <!-- Parsing lines assuming they might be split by newline, or just showing text -->
+                            <div class="res-item">
+                                <mat-icon>check</mat-icon>
+                                <span>{{complaint.resolutionNotes}}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feedback Block -->
+                    <div class="feedback-block" *ngIf="complaint.feedback || complaint.feedbackRating">
+                        <div class="block-header">
+                            <div class="header-left">
+                                <mat-icon>rate_review</mat-icon>
+                                <span>User Feedback</span>
+                            </div>
                             <div class="stars">
                                 <mat-icon *ngFor="let star of [1,2,3,4,5]"
                                     [class.filled]="star <= complaint.feedbackRating">star</mat-icon>
@@ -51,13 +78,14 @@
                             Submitted: {{complaint.feedbackDate | date:'medium'}}
                         </p>
                     </div>
-                </mat-card-content>
-                <mat-card-actions [align]="'end'" class="actions-row">
+                </div>
 
-                    <!-- Admin: Assign Staff -->
-                    <mat-form-field appearance="outline" class="status-select" *ngIf="isAdmin">
-                        <mat-label>Assign Staff</mat-label>
-                        <mat-select [value]="complaint.staffId"
+                <!-- Footer: Actions -->
+                <div class="card-footer">
+                    <!-- Admin Assign Staff -->
+                    <mat-form-field appearance="outline" class="status-changer" *ngIf="isAdmin"
+                        style="margin-right: auto;">
+                        <mat-select [value]="complaint.staffId" placeholder="Assign Staff"
                             (selectionChange)="assignStaff(complaint, $event.value)">
                             <mat-option *ngFor="let staff of staffList" [value]="staff.id">
                                 {{staff.name}}
@@ -65,20 +93,30 @@
                         </mat-select>
                     </mat-form-field>
 
-                    <!-- Staff/Admin: Update Status -->
-                    <mat-form-field appearance="outline" class="status-select">
-                        <mat-label>Update Status</mat-label>
-                        <mat-select [value]="complaint.status"
-                            (selectionChange)="updateStatus(complaint, $event.value)">
-                            <mat-option *ngFor="let status of statuses" [value]="status">
-                                {{status}}
-                            </mat-option>
-                        </mat-select>
-                    </mat-form-field>
+                    <div class="status-changer">
+                        <mat-form-field appearance="outline">
+                            <mat-select [value]="complaint.status" placeholder="Change Status"
+                                (selectionChange)="updateStatus(complaint, $event.value)">
+                                <mat-option *ngFor="let status of statuses" [value]="status">
+                                    {{status}}
+                                </mat-option>
+                            </mat-select>
+                        </mat-form-field>
+                    </div>
 
-                </mat-card-actions>
+                    <div class="action-buttons">
+                        <button mat-icon-button matTooltip="Edit" (click)="editComplaint(complaint)">
+                            <mat-icon>edit_note</mat-icon>
+                        </button>
+                        <button mat-icon-button matTooltip="Refresh" (click)="refresh()">
+                            <mat-icon>refresh</mat-icon>
+                        </button>
+                    </div>
+                </div>
+
             </mat-card>
 
+            <!-- No Data -->
             <div *ngIf="complaints.length === 0" class="no-data">
                 <mat-icon>inbox</mat-icon>
                 <p>No complaints found.</p>
@@ -86,12 +124,12 @@
         </div>
     </div>
 
-    <!-- Resolution Notes Dialog Template -->
+    <!-- Resolution Dialog -->
     <ng-template #resolutionDialog>
         <h2 mat-dialog-title>Resolve Complaint</h2>
         <mat-dialog-content>
             <p>Please provide details about the resolution.</p>
-            <mat-form-field appearance="outline" class="full-width">
+            <mat-form-field appearance="outline" class="full-width" style="width: 100%;">
                 <mat-label>Resolution Notes</mat-label>
                 <textarea matInput [(ngModel)]="resolutionNotes" rows="4"
                     placeholder="Action taken, fixes made, etc."></textarea>
